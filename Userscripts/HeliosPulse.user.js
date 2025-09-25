@@ -12,7 +12,7 @@
 (function(){
   "use strict";
   const CONFIG = {
-    WEBAPP_URL: "", // <-- wklej URL WebApp po deploy
+    WEBAPP_URL: "https://script.google.com/macros/s/AKfycbzl-XWLBfFa-Zk9LpU5gsHm6udl7FcQktTast8piZCW/dev", // <-- wklej URL WebApp po deploy
     TOKEN: "HeliosPulseToken"
   };
 

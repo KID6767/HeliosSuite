@@ -11,7 +11,7 @@
 (function() {
   const CONFIG = {
     "ALLIANCE": "Legionisci Heliosa",
-    "WEBAPP_URL": "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec",
+    "WEBAPP_URL": "https://script.google.com/macros/s/AKfycbzl-XWLBfFa-Zk9LpU5gsHm6udl7FcQktTast8piZCW/dev",
     "TOKEN": "HeliosPulseToken"
   };
 
