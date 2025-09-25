@@ -38,3 +38,4 @@
   setInterval(pingPresence, 5*60*1000); // co 5 minut
   setTimeout(addUI, 3000);
 })();
+
