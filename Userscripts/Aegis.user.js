@@ -1,19 +1,20 @@
 ﻿// ==UserScript==
-// @name         Aegis â€” UI Remaster (safe)
+// @name         Aegis (UI Remaster)
 // @namespace    https://kid6767.github.io/HeliosSuite/
-// @version      1.0.0
-// @description  Cosmetic UI improvements only (no automation).
+// @version      1.0.1
+// @description  Zielono-złoty styl dla Grepolis
 // @match        https://*.grepolis.com/*
-// @match        http://*.grepolis.com/*
-// @exclude      https://forum*.grepolis.*
 // @grant        none
-// @run-at       document-idle
+// @run-at       document-end
 // ==/UserScript==
-(function(){
+
+(function() {
+  'use strict';
   const css = `
-    .gpwindow_container, .ui-dialog { border-radius:10px !important; }
-    .gpwindow { box-shadow:0 12px 30px rgba(0,0,0,0.4) !important; }
-    body{ background: radial-gradient(1200px 800px at 50% 0%, #0b1614, #090909) !important; }
+    .gpwindow_container, .ui-dialog { border-radius:12px !important; }
+    .gpwindow { box-shadow: 2px 2px 8px rgba(0,0,0,0.4) !important; }
+    body { background: radial-gradient(circle, #0b3d0b, #001a00) !important; }
+    .ui-dialog-titlebar { background:#ffd700 !important; color:#111 !important; font-weight:bold; }
   `;
   const s=document.createElement("style"); s.textContent=css; document.head.appendChild(s);
 })();
