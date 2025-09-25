@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>HeliosSuite</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;background:#0f2027;color:#fff;margin:0}
+  header{padding:28px 16px;background:#132a33}
+  h1{margin:0;color:#ffd700}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px 16px}
+  .grid{display:flex;gap:16px;flex-wrap:wrap}
+  .card{flex:1 1 300px;background:#17323d;border:1px solid #2e4e59;border-radius:10px;padding:16px}
+  .card h2{margin:0 0 8px 0;color:#ffd700}
+  .btn{display:inline-block;margin-top:10px;background:#ffd700;color:#000;padding:8px 12px;border-radius:8px;text-decoration:none}
+  .btn:hover{background:#ff9900;color:#fff}
+  footer{margin-top:30px;padding:16px;background:#132a33;color:#ddd;text-align:center}
+  .logo{display:block;margin:0 auto 10px auto;width:320px;max-width:90%}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <img class="logo" src="./assets/logo_placeholder.svg" alt="HeliosSuite">
+    <h1>HeliosSuite</h1>
+    <div>HeliosPulse â€˘ Aegis â€˘ GrepoFusion</div>
+  </div>
+</header>
+<div class="wrap">
+  <p>Instalacja: otwĂłrz poniĹĽsze skrypty i dodaj je w Tampermonkey. Po odĹ›wieĹĽeniu Grepolis zobaczysz nowy wyglÄ…d (Aegis), panel GrepoFusion i automatyczne pingowanie obecnoĹ›ci (HeliosPulse).</p>
+  <div class="grid">
+    <div class="card">
+      <h2>HeliosPulse</h2>
+      <p>ObecnoĹ›Ä‡, last_seen, dzienne raporty (Google Apps Script).</p>
+      <a class="btn" href="./Userscripts/HeliosPulse.user.js">Pobierz</a>
+    </div>
+    <div class="card">
+      <h2>Aegis (UI Remaster)</h2>
+      <p>Butelkowa zieleĹ„ + zĹ‚oto, stylizacja UI, placeholder logo.</p>
+      <a class="btn" href="./Userscripts/Aegis.user.js">Pobierz</a>
+    </div>
+    <div class="card">
+      <h2>GrepoFusion (Hub)</h2>
+      <p>Panel pomocniczy i miejsce na Twoje moduĹ‚y (bez auto-click).</p>
+      <a class="btn" href="./Userscripts/GrepoFusion.user.js">Pobierz</a>
+    </div>
+  </div>
+</div>
+<footer>Â© HeliosSuite</footer>
+</body>
+</html>
