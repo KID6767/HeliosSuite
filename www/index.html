@@ -1,11 +1,87 @@
-﻿<!doctype html>
-<html lang="pl"><head><meta charset="utf-8"><title>HeliosSuite Installer</title></head><body style="background:#0b1614;color:#f1d78a;font-family:Arial;padding:20px">
-<h1>HeliosSuite â€” instalator</h1>
-<p>Po rozpakowaniu znajdziesz katalog <code>HeliosSuite/</code> z nastÄ™pujÄ…cymi elementami:</p>
-<ul>
-  <li><b>Userscripts</b> â€” skopiuj zawartoĹ›Ä‡ plikĂłw do Tampermonkey (Nowy skrypt â†’ wklej â†’ Zapisz).</li>
-  <li><b>Skrypty</b> â€” otwĂłrz <code>HeliosPulse_Code.gs</code> w script.google.com i Deploy â†’ New deployment â†’ Web app â†’ Execute as: Me; Who has access: Anyone.</li>
-  <li>Po uzyskaniu WebApp URL uruchom <code>Skrypty/deploy_update_webapp_url.ps1</code> aby podstawiÄ‡ URL w HeliosPulse.user.js.</li>
-</ul>
-<p style="color:#f1d78a">Uwaga: paczka zawiera tylko bezpieczne skrypty - brak botĂłw / auto-clickerĂłw. Nie dostarczamy narzÄ™dzi Ĺ‚amiÄ…cych regulamin.</p>
-</body></html>
+﻿<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>HeliosSuite</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0d1b1e;
+      color: #f1d78a;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    header {
+      background: #132a13;
+      padding: 30px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #ffd700;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    .container {
+      display: flex;
+      justify-content: center;
+      margin-top: 50px;
+      gap: 25px;
+    }
+    .card {
+      background: #1b2b34;
+      padding: 20px;
+      border-radius: 12px;
+      width: 280px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+    .card h2 {
+      color: #ffd700;
+      margin-bottom: 15px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 10px 18px;
+      background: #ffd700;
+      color: #111;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .btn:hover {
+      background: #ffcc00;
+    }
+    footer {
+      margin-top: 60px;
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <header>HELIOS SUITE</header>
+  <p>Instalacja: kliknij przycisk poniżej, aby dodać skrypt w Tampermonkey.  
+  Po odświeżeniu Grepolis zobaczysz nowy wygląd (Aegis), panel GrepoFusion oraz automatyczne raporty obecności (HeliosPulse).</p>
+
+  <div class="container">
+    <div class="card">
+      <h2>HeliosPulse</h2>
+      <p>Obecność, last_seen, dzienne raporty (Google Apps Script).</p>
+      <a class="btn" href="https://github.com/KID6767/HeliosSuite/raw/main/Userscripts/HeliosPulse.user.js">⏬ Zainstaluj</a>
+    </div>
+
+    <div class="card">
+      <h2>Aegis</h2>
+      <p>Zielono-złoty UI remaster, nowy styl interfejsu.</p>
+      <a class="btn" href="https://github.com/KID6767/HeliosSuite/raw/main/Userscripts/Aegis.user.js">⏬ Zainstaluj</a>
+    </div>
+
+    <div class="card">
+      <h2>GrepoFusion</h2>
+      <p>Hub narzędzi, eksport CSV, snapshoty.</p>
+      <a class="btn" href="https://github.com/KID6767/HeliosSuite/raw/main/Userscripts/GrepoFusion.user.js">⏬ Zainstaluj</a>
+    </div>
+  </div>
+
+  <footer>© HeliosSuite</footer>
+</body>
+</html>
