@@ -1,143 +1,44 @@
-﻿<!doctype html>
+﻿<!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="utf-8">
-    <title>HeliosSuite — Aegis • GrepoFusion • HeliosPulse</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        :root {
-            --bg: #0b0f15;
-            --card: #101620;
-            --acc: #ffd26a;
-            --text: #e9eef5;
-        }
-
-        * {
-            box-sizing: border-box
-        }
-
-        body {
-            margin: 0;
-            background: radial-gradient(1200px 800px at 80% -10%, #152033, transparent 40%), var(--bg);
-            color: var(--text);
-            font: 16px Inter,system-ui,Segoe UI,Arial
-        }
-
-        .hero {
-            max-width: 1100px;
-            margin: 48px auto 24px;
-            padding: 0 16px;
-            text-align: center
-        }
-
-        h1 {
-            font-size: 40px;
-            margin: 0 0 10px;
-            letter-spacing: .4px
-        }
-
-        p.lead {
-            opacity: .9;
-            margin: 0 0 18px
-        }
-
-        .grid {
-            max-width: 1100px;
-            margin: 24px auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
-            gap: 16px;
-            padding: 0 16px
-        }
-
-        .card {
-            background: linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
-            border: 1px solid rgba(255,255,255,.06);
-            border-radius: 14px;
-            padding: 16px;
-            box-shadow: 0 18px 40px rgba(0,0,0,.35)
-        }
-
-            .card h3 {
-                margin: 0 0 8px;
-                color: var(--acc)
-            }
-
-        .btn {
-            display: inline-block;
-            background: var(--acc);
-            color: #121212;
-            font-weight: 800;
-            padding: 10px 14px;
-            border-radius: 10px;
-            text-decoration: none
-        }
-
-            .btn:hover {
-                transform: translateY(-1px);
-                filter: brightness(1.05)
-            }
-
-        .shots {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px
-        }
-
-        .shot {
-            flex: 1;
-            aspect-ratio: 16/10;
-            background: #0e141e;
-            border: 1px dashed rgba(255,255,255,.1);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: .8
-        }
-
-        footer {
-            max-width: 1100px;
-            margin: 28px auto 40px;
-            padding: 0 16px;
-            opacity: .7
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HeliosSuite â€“ Instalacja dodatkĂłw</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <section class="hero">
-        <h1>HeliosSuite</h1>
-        <p class="lead">Trzy dodatki: <b>⚔️ Aegis</b> (remaster UI), <b>🌌 GrepoFusion</b> (panel helperów) i <b>☀️ HeliosPulse</b> (obecność + raporty).</p>
-        <p class="lead">Zainstaluj w Tampermonkey jednym kliknięciem:</p>
+  <header>
+    <h1>â€ď¸Ź HeliosSuite</h1>
+    <p>âš”ď¸Ź Aegis (UI), đźŚŚ GrepoFusion (hub), â€ď¸Ź HeliosPulse (raporty + obecnoĹ›Ä‡)</p>
+  </header>
+
+  <main>
+    <section class="addon">
+      <img src="img/aegis.png" alt="Aegis screenshot">
+      <h2>âš”ď¸Ź Aegis</h2>
+      <p>ZĹ‚oto-czarny wyglÄ…d, ikony w menu, 4 motywy (Classic, Remaster, Piracki, Dark).</p>
+      <a class="btn" href="../Userscripts/Aegis.user.js">Zainstaluj Aegis</a>
     </section>
 
-    <section class="grid">
-        <div class="card">
-            <h3>⚔️ Aegis</h3>
-            <p>Złoto-czarny wygląd, ikony w menu, 4 motywy (Classic, Remaster, Piracki, Dark), wygładzone okna.</p>
-            <div class="shots">
-                <div class="shot">screenshot</div><div class="shot">screenshot</div>
-            </div>
-            <p style="margin-top:12px"><a class="btn" href="https://raw.githubusercontent.com/KID6767/HeliosSuite/main/Userscripts/Aegis.user.js">Zainstaluj Aegis</a></p>
-        </div>
-
-        <div class="card">
-            <h3>🌌 GrepoFusion</h3>
-            <p>Panel ustawień a’la GCRT + zintegrowane helpery (indeks miast, kalkulatory, podświetlenia mapy…)</p>
-            <div class="shots"><div class="shot">screenshot</div><div class="shot">screenshot</div></div>
-            <p style="margin-top:12px"><a class="btn" href="https://raw.githubusercontent.com/KID6767/HeliosSuite/main/Userscripts/GrepoFusion.user.js">Zainstaluj GrepoFusion</a></p>
-        </div>
-
-        <div class="card">
-            <h3>☀️ HeliosPulse</h3>
-            <p>Ikona „Raporty Helios” w grze, ping obecności do Google Sheets, podgląd dziennych raportów (BBCode).</p>
-            <div class="shots"><div class="shot">screenshot</div><div class="shot">screenshot</div></div>
-            <p style="margin-top:12px"><a class="btn" href="https://raw.githubusercontent.com/KID6767/HeliosSuite/main/Userscripts/HeliosPulse.user.js">Zainstaluj HeliosPulse</a></p>
-        </div>
+    <section class="addon">
+      <img src="img/grepo.png" alt="GrepoFusion screenshot">
+      <h2>đźŚŚ GrepoFusion</h2>
+      <p>Panel ustawieĹ„ aâ€™la GCRT + zintegrowane helpy (City Indexer, Transport, Zeitrechner, Map Enhancer).</p>
+      <a class="btn" href="../Userscripts/GrepoFusion.user.js">Zainstaluj GrepoFusion</a>
     </section>
 
-    <footer>
-        <p><b>Instrukcja:</b> Zainstaluj <i>Tampermonkey</i> → kliknij „Zainstaluj” przy wybranym dodatku → w HeliosPulse ustaw WEBAPP_URL (Google Apps Script: „Deploy as WebApp”) → odśwież Grepolis.</p>
-    </footer>
+    <section class="addon">
+      <img src="img/pulse.png" alt="HeliosPulse screenshot">
+      <h2>â€ď¸Ź HeliosPulse</h2>
+      <p>Raporty obecnoĹ›ci i logi w grze. Ikona w menu, eksport do Google Sheets.</p>
+      <a class="btn" href="../Userscripts/HeliosPulse.user.js">Zainstaluj HeliosPulse</a>
+    </section>
+  </main>
+
+  <footer>
+    <p>Â© HeliosSuite 2025 | Upewnij siÄ™, ĹĽe masz zainstalowane Tampermonkey w przeglÄ…darce.</p>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>

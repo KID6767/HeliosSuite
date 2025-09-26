@@ -13,7 +13,7 @@ if (-not (Test-Path $UserJs)) {
 }
 
 if (-not $NewUrl) {
-  $NewUrl = Read-Host "Wklej WebApp URL (https://script.google.com/.../exec)"
+  $NewUrl = Read-Host "Wklej WebApp URL (https://script.google.com/macros/s/AKfycbwsYodTn3Q9YEXCiDBRrikyC0p14MobkE_PSbjyiEw-WIPt6KJvEUHO0MqqitcCdyFFLg/exec)
 }
 
 $t = Get-Content $UserJs -Raw
