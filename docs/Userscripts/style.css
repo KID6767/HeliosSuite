@@ -1,0 +1,18 @@
+﻿body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(180deg, #0a0f1c, #101828);
+  color: #eee;
+  text-align: center;
+}
+header { padding: 2rem 1rem; }
+h1 { color: #ffd54f; margin-bottom: .5rem; }
+main { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; padding: 2rem; }
+.addon { background: #1b2233; border-radius: 12px; padding: 1.5rem; width: 280px; box-shadow: 0 0 20px rgba(255,213,79,0.15); transition: transform 0.2s; }
+.addon:hover { transform: scale(1.05); }
+.addon img { width: 100%; border-radius: 8px; margin-bottom: 1rem; }
+.btn { display: inline-block; background: #ffd54f; color: #000; text-decoration: none; font-weight: bold; padding: .6rem 1rem; border-radius: 6px; transition: background 0.2s; }
+.btn:hover { background: #ffb300; }
+footer { margin-top: 3rem; padding: 1rem; font-size: 0.9rem; color: #aaa; }
+.star { position: absolute; width: 4px; height: 4px; background: #ffd54f; border-radius: 50%; pointer-events: none; animation: fade 1.5s forwards; }
+@keyframes fade { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(3); } }
