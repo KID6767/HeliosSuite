@@ -1,23 +1,25 @@
-param(
-    [string]$NewUrl = ""
+Param(
+  [Parameter(Mandatory=$false)]
+  [string]$NewUrl
 )
 
-$HP = Join-Path (Split-Path $PSScriptRoot -Parent) "Userscripts\HeliosPulse.user.js"
+$ErrorActionPreference = "Stop"
+$Root = Split-Path -Parent $PSScriptRoot
+$UserJs = Join-Path $Root "Userscripts\HeliosPulse.user.js"
 
-if (-not (Test-Path $HP)) {
-    Write-Host "[ERR] Nie znaleziono pliku: $HP" -ForegroundColor Red
-    exit 1
+if (-not (Test-Path $UserJs)) {
+  Write-Host "[X] Not found: $UserJs" -ForegroundColor Red
+  exit 1
 }
 
-if ($NewUrl -eq "") {
-    $NewUrl = Read-Host "Wklej WebApp URL (https://script.google.com/.../exec)"
+if (-not $NewUrl) {
+  $NewUrl = Read-Host "Wklej WebApp URL (https://script.google.com/.../exec)"
 }
 
-$t = Get-Content $HP -Raw
+$t = Get-Content $UserJs -Raw
 
-# poprawiona podmiana
-$t = $t -replace 'WEBAPP_URL:\s*""', "WEBAPP_URL: `"$NewUrl`""
+# podmień wartość po WEBAPP_URL: "..."
+$t = $t -replace '(WEBAPP_URL:\s*")([^"]*)(")', "`$1$NewUrl`$3"
 
-Set-Content -Path $HP -Value $t -Encoding UTF8
-
-Write-Host "[OK] Updated HeliosPulse.user.js with new WEBAPP URL"
+Set-Content -Path $UserJs -Value $t -Encoding UTF8
+Write-Host "[OK] Updated HeliosPulse.user.js with new WEBAPP URL" -ForegroundColor Green

@@ -1,133 +1,123 @@
 ﻿// ==UserScript==
-// @name         HeliosPulse — Raporty & Obecność (UI)
-// @namespace    https://kid6767.github.io/HeliosSuite/
+// @name         HeliosPulse — Presence & Reports (Sheets)
+// @namespace    https://github.com/KID6767/HeliosSuite
 // @version      1.0.0
-// @description  Ikona „Helios” w menu, meldowanie obecności, podgląd raportu dziennego (BBCode) – wszystko w oknie w grze.
+// @description  Ikona „Raporty Helios” w menu; ping obecności; podgląd raportu z Google Apps Script (JSON/BBCode) + link do pełnej strony sojuszu.
+// @author       KID6767
 // @match        https://*.grepolis.com/*
 // @match        http://*.grepolis.com/*
-// @grant        GM_xmlhttpRequest
-// @connect      script.google.com
 // @run-at       document-end
+// @connect      script.google.com
+// @grant        GM_xmlhttpRequest
+// @downloadURL  https://raw.githubusercontent.com/KID6767/HeliosSuite/main/Userscripts/HeliosPulse.user.js
+// @updateURL    https://raw.githubusercontent.com/KID6767/HeliosSuite/main/Userscripts/HeliosPulse.user.js
 // ==/UserScript==
-(function(){
+(function () {
   'use strict';
 
   const CONFIG = {
-    WEBAPP_URL: "",              // <- Wklej swój /exec
-    TOKEN: "HeliosPulseToken",   // <- jak w Twoim .gs
-    NICK:  (window.Game && Game.player_name) || (document.body.dataset.playerName || "Unknown")
+    WEBAPP_URL: "https://script.google.com/macros/s/....../exec", // <-- wstaw tutaj swój EXEC URL z Google Apps Script
+    TOKEN: "HeliosPulseToken",
+    PAGES_URL: "https://kid6767.github.io/HeliosSuite/"
   };
 
-  // Proste UI: ikona w lewym menu
-  addMenuIcon();
-  function addMenuIcon(){
-    const menu = document.querySelector('.menu_inner') || document.querySelector('#ui_box .menu_inner');
-    if(!menu) { setTimeout(addMenuIcon, 1000); return; }
-    const li = document.createElement('li');
-    const a  = document.createElement('a');
-    a.href = "#";
-    a.title = "Helios – Raporty / Obecność";
-    a.innerHTML = `<span class="icon"></span><span class="left"></span><span class="right">☀ Helios</span>`;
-    a.addEventListener('click', (e)=>{ e.preventDefault(); openWindow(); });
-    li.appendChild(a);
-    menu.appendChild(li);
-
-    // prosta złota ikona
-    const css = `
-      .menu_inner a:has(.right:contains("Helios")) .icon,
-      .menu_inner a .right:contains("Helios") { color:#f3d07a !important; }
-      .menu_inner a .icon::before {
-        content:''; position:absolute; inset:0;
-      }
-    `;
-    injectCSS(css);
+  function getNick(){
+    // Spróbuj odczytać nick z UI; jeśli się nie uda, zapytaj użytkownika raz i zapisz w localStorage
+    const LS='HP_NICK';
+    const fromLS = localStorage.getItem(LS);
+    if (fromLS) return fromLS;
+    const fallback = prompt("Podaj swój nick w grze (dla HeliosPulse):","Alpakiz") || "Unknown";
+    localStorage.setItem(LS, fallback);
+    return fallback;
   }
 
-  function openWindow(){
-    let w = document.getElementById('hp_window');
-    if (w){ w.style.display='block'; return; }
-    w = document.createElement('div');
-    w.id='hp_window';
-    w.style.cssText='position:fixed;z-index:999999;top:120px;left:calc(50% - 280px);width:560px;background:#1b1813;color:#f1e7c8;border:1px solid #3b3326;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.5);';
-    w.innerHTML = `
-      <div style="padding:10px 12px;border-bottom:1px solid #3b3326;display:flex;justify-content:space-between;align-items:center;">
-        <div style="color:#f3d07a;font-weight:700">☀ HeliosPulse</div>
-        <div>
-          <button id="hp_btn_presence">Zamelduj obecność</button>
-          <button id="hp_btn_refresh">Odśwież raport</button>
-          <button id="hp_btn_close">✕</button>
-        </div>
-      </div>
-      <div style="padding:10px 12px;">
-        <div style="margin-bottom:6px;opacity:.85">Nick: <b>${CONFIG.NICK}</b></div>
-        <div id="hp_status" style="margin-bottom:8px;color:#f3d07a;"></div>
-        <div><b>📊 Raport dzienny (BBCode)</b></div>
-        <textarea id="hp_bbcode" style="width:100%;height:220px;background:#14110c;color:#f1e7c8;border:1px solid #3b3326;border-radius:6px;margin-top:6px;"></textarea>
-        <div style="margin-top:8px;display:flex;gap:8px;">
-          <button id="hp_copy">Kopiuj BBCode</button>
-          <a id="hp_pages" href="#" target="_blank" style="color:#f3d07a">Pełny raport online</a>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(w);
-
-    // style przycisków
-    injectCSS(`
-      #hp_window button{
-        background:linear-gradient(180deg,#2a241a,#1b170f);border:1px solid #3b3326;color:#e6c15b;border-radius:6px;padding:6px 9px;cursor:pointer;
-      } #hp_window button:hover{ filter:brightness(1.1);}
-    `);
-
-    byId('hp_btn_close').addEventListener('click', ()=> w.remove());
-    byId('hp_btn_presence').addEventListener('click', pingPresence);
-    byId('hp_btn_refresh').addEventListener('click', loadBBCode);
-    byId('hp_copy').addEventListener('click', copyBBCode);
-
-    loadBBCode();
-  }
-
-  function pingPresence(){
-    if (!CONFIG.WEBAPP_URL){ return msg('Ustaw WEBAPP_URL w HeliosPulse.user.js'); }
-    const url = `${CONFIG.WEBAPP_URL}?token=${encodeURIComponent(CONFIG.TOKEN)}&action=presence&nick=${encodeURIComponent(CONFIG.NICK)}`;
-    req(url, (ok,res)=>{
-      msg(ok? 'Obecność zapisana.' : ('Błąd: '+res));
+  function apiGet(params, onOk, onErr){
+    if (!CONFIG.WEBAPP_URL) { toast("HeliosPulse: brak WEBAPP_URL — ustaw go w pliku."); return; }
+    const q = new URLSearchParams(Object.assign({ token: CONFIG.TOKEN }, params)).toString();
+    GM_xmlhttpRequest({
+      method:'GET',
+      url: CONFIG.WEBAPP_URL + "?" + q,
+      onload: (r)=>{
+        try {
+          if (r.status!==200) throw new Error("HTTP "+r.status);
+          onOk && onOk(r.responseText);
+        } catch (e){ onErr && onErr(e); }
+      },
+      onerror: (e)=> onErr && onErr(e)
     });
   }
 
-  function loadBBCode(){
-    if (!CONFIG.WEBAPP_URL){ return msg('Ustaw WEBAPP_URL w HeliosPulse.user.js'); }
-    const url = `${CONFIG.WEBAPP_URL}?token=${encodeURIComponent(CONFIG.TOKEN)}&action=daily_report_bbcode`;
-    req(url, (ok,res)=>{
-      if(ok){
-        byId('hp_bbcode').value = res;
-        // link do pages (jeśli backend zwraca w BBCode lub znasz swój URL – podmień)
-        byId('hp_pages').href = 'https://kid6767.github.io/HeliosPulse/'; // podmień na właściwy jeśli inny
-        msg('Raport załadowany.');
-      }else{
-        msg('Błąd raportu: '+res);
-      }
+  function toast(msg){
+    const d=document.createElement('div');
+    d.textContent=msg;
+    d.style.cssText='position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#111;color:#ffd26a;padding:10px 14px;border-radius:10px;z-index:999999;box-shadow:0 8px 24px rgba(0,0,0,.4)';
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(),2500);
+  }
+
+  // Ikona „Raporty Helios”
+  function addSidebarIcon(){
+    if (document.getElementById('hp-icon')) return;
+    const btn = document.createElement('div');
+    btn.id='hp-icon';
+    btn.title='HeliosPulse — Raporty';
+    btn.style.cssText='position:fixed;left:10px;bottom:150px;width:40px;height:40px;border-radius:9px;background:radial-gradient(ellipse at 40% 30%, #ffd26a, transparent 60%);box-shadow:0 8px 18px rgba(0,0,0,.45);cursor:pointer;z-index:999999;';
+    btn.onclick = openPanel;
+    document.body.appendChild(btn);
+  }
+
+  function openPanel(){
+    let w=document.getElementById('hp-panel');
+    if (!w){
+      w=document.createElement('div');
+      w.id='hp-panel';
+      w.style.cssText='position:fixed;right:16px;top:16px;width:480px;max-width:92vw;background:#0f1218;color:#eee;border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,.06);box-shadow:0 10px 30px rgba(0,0,0,.45);z-index:999999';
+      w.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-weight:800;letter-spacing:.5px;color:#ffd26a">HeliosPulse — Raport dzienny</div>
+        <button id="hp-close" style="background:#ffd26a;border:none;border-radius:8px;padding:6px 10px;color:#111;font-weight:800;cursor:pointer">X</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input id="hp-date" type="date" style="flex:1;background:#131722;border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#fff;padding:6px 8px">
+        <button id="hp-refresh" class="hp-btn">Odśwież</button>
+        <a id="hp-full" class="hp-btn" href="${CONFIG.PAGES_URL}" target="_blank">Pełny raport</a>
+      </div>
+      <pre id="hp-out" style="white-space:pre-wrap;background:#10151c;border-radius:8px;padding:10px;max-height:52vh;overflow:auto;border:1px solid rgba(255,255,255,.06)"></pre>
+      <style>.hp-btn{background:#ffd26a;border:none;border-radius:8px;padding:6px 10px;color:#111;font-weight:800;cursor:pointer}</style>
+      `;
+      document.body.appendChild(w);
+      w.querySelector('#hp-close').onclick = ()=> w.remove();
+      w.querySelector('#hp-refresh').onclick = ()=> loadReport();
+    }
+    loadReport();
+  }
+
+  function loadReport(){
+    const date = document.getElementById('hp-date');
+    if (!date.value){
+      const d=new Date(); date.value = d.toISOString().slice(0,10);
+    }
+    apiGet({ action:'daily_report_bbcode', date: date.value }, (txt)=>{
+      document.getElementById('hp-out').textContent = txt;
+    }, ()=>{
+      document.getElementById('hp-out').textContent = 'Błąd pobierania raportu. Sprawdź WEBAPP_URL / uprawnienia Apps Script.';
     });
   }
 
-  function copyBBCode(){
-    const ta = byId('hp_bbcode');
-    ta.select(); document.execCommand('copy');
-    msg('Skopiowano do schowka.');
+  // Ping obecności (raz per sesja)
+  function pingPresenceOnce(){
+    const KEY='HP_PINGED_'+(new Date()).toISOString().slice(0,10);
+    if (sessionStorage.getItem(KEY)) return;
+    sessionStorage.setItem(KEY,'1');
+    apiGet({ action:'presence', nick: getNick() }, ()=> toast('HeliosPulse: Obecność odnotowana ✔'), ()=>{});
   }
 
-  // net helper
-  function req(url, cb){
-    try{
-      GM_xmlhttpRequest({
-        method:'GET', url,
-        onload:(r)=> cb(true, r.responseText),
-        onerror:(e)=> cb(false, String(e && e.error || 'net error'))
-      });
-    }catch(err){ cb(false, String(err));}
+  function start(){
+    addSidebarIcon();
+    pingPresenceOnce();
   }
 
-  // utils
-  function byId(id){ return document.getElementById(id); }
-  function injectCSS(s){ const st=document.createElement('style'); st.textContent=s; document.head.appendChild(st); }
-  function msg(t){ const n=byId('hp_status'); if(n) n.textContent = t; }
+  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
 })();
+
