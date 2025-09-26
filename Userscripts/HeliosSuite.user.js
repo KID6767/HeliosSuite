@@ -18,7 +18,7 @@
    * KONFIGURACJA (UZUPEŁNIJ 2 RZECZY, JEŚLI CHCESZ RAPORTY ONLINE)
    ******************************************************************/
   const CONFIG = {
-    WEBAPP_URL: "",            // <--- Wklej pełny URL do Google Apps Script (końcówka /exec). Np.: "https://script.google.com/macros/s/XXXXX/exec"
+    WEBAPP_URL: "https://script.google.com/macros/s/AKfycbzl-XWLBfFa-Zk9LpU5gsHm6udl7FcQktTast8piZCW/dev",            // <--- Wklej pełny URL do Google Apps Script (końcówka /exec). Np.: "https://script.google.com/macros/s/XXXXX/exec"
     TOKEN: "HeliosPulseToken", // <--- Ten sam, co w Twoim .gs (HP.TOKEN)
     ALLIANCE_NAME: "Legioniści Heliosa",
     AUTO_PING_EVERY_MIN: 15    // co ile minut ping obecności; 0 = wyłącz auto-ping
