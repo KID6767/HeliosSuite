@@ -1,30 +1,21 @@
-# HeliosSuite (TEMP MONO)
+# HeliosSuite
 
-> **Tymczasowa** scalona wersja trzech dodatków do Grepolis:
-- **Aegis** — motywy (jasny/ciemny) + poprawki UI/okien.
-- **GrepoFusion** — hub + helpers + eksport CSV (indeks miast).
-- **HeliosPulse** — ping obecności + raport dzienny (BBCode/JSON z Google Apps Script).
-
-Docelowo każdy z nich będzie **osobnym userscriptem i repo**. HeliosSuite zostanie usunięty, gdy rozdzielimy moduły i ustabilizujemy API.
-
-## Instalacja
-1. Zainstaluj **Tampermonkey**.
-2. Skopiuj zawartość `HeliosSuite.user.js` → **Nowy skrypt** → Zapisz.
-3. Odśwież Grepolis.
+Komplet Aegis (motywy), GrepoFusion (pakiet helperów), HeliosPulse (presence/raporty) – w jednym skrypcie Tampermonkey.
 
 ## Funkcje
-- Przełącznik motywu (FAB w prawym dolnym rogu lub menu Tampermonkey).
-- Globalny fix okien Grepolis (tła, przewijanie, cienie, border).
-- GrepoFusion Hub (lewy górny róg) → **Export CSV** miast.
-- HeliosPulse Box (lewy dolny róg) → **Ping obecności**, **Podgląd raportu dziennego (BBCode)**.
+- Zakładka **HeliosSuite** w ustawieniach Grepolis (Motywy/Moduły/HeliosPulse/Czat)
+- Motywy: **Classic / Remaster / Piracki / Dark**
+- Naprawy UI (z-index/okna) – koniec „zjeżdżania”
+- **HeliosPulse**: ping obecności + generowanie dziennego raportu (BBCode do schowka)
+- **Czat (alpha)** – lokalny (browser-local). Docelowo kanały Sojusz/Pakt/Global via backend.
 
-## Wymagania
-- Grepolis (przeglądarka desktop).
-- Tampermonkey 5.x.
-- (opcjonalnie do raportów) **Google Apps Script WebApp** (URL + token).
+## Instalacja
+1. Wejdź na stronę: https://kid6767.github.io/HeliosSuite/
+2. Kliknij „Zainstaluj w Tampermonkey”.
+3. Odśwież Grepolis. Ikona ☀️ po lewej otwiera panel. Zakładka w Ustawieniach pojawi się automatycznie.
 
-## Konfiguracja
-W tej wersji URL i token są **zaszyte na stałe** (na prośbę użytkownika):
-```js
-WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyHm1SuEMUyfeRUiU9ttQLyfaix1QacKaJhU0tGdB_YQb9ToaWHiRoYA55lPvkmIceq3w/exec"
-TOKEN      = "HeliosPulseToken"
+## Konfiguracja backendu
+- `WEBAPP_URL`: wskazuje na Google Apps Script `/exec` 
+- `TOKEN`: `HeliosPulseToken`
+
+W obecnej wersji wartości są już wpisane w skrypcie.

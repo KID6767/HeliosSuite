@@ -1,160 +1,582 @@
 // ==UserScript==
-// @name         HeliosSuite
-// @namespace    http://tampermonkey.net/
+// @name         HeliosSuite (Aegis + GrepoFusion + HeliosPulse)
+// @namespace    https://kid6767.github.io/HeliosSuite/
 // @version      1.0.0
-// @description  Zintegrowany pakiet Aegis + GrepoFusion + HeliosPulse dla Grepolis
-// @author       kid6767 & GPT
-// @match        https://*.grepolis.com/game/*
-// @icon         https://i.imgur.com/AKW1G7F.png
-// @grant        none
+// @description  Motywy (Classic/Remaster/Piracki/Dark), zakładka ustawień jak natywnie, HeliosPulse (presence+raporty), integracje GrepoFusion, Aegis. Naprawa z-index/okien. Lekki czat (alpha).
+// @author       HeliosSuite
+// @match        https://*.grepolis.com/*
+// @match        http://*.grepolis.com/*
+// @exclude      https://forum*.grepolis.*/*
+// @exclude      http://forum*.grepolis.*/*
+// @grant        GM_addStyle
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_registerMenuCommand
+// @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
-(function () {
-    'use strict';
+(function() {
+  'use strict';
 
-    /************************************
-     * KONFIGURACJA GLOBALNA
-     ************************************/
-    const CONFIG = {
-        WEBAPP_URL: "https://script.google.com/macros/s/AKfycbyHm1SuEMUyfeRUiU9ttQLyfaix1QacKaJhU0tGdB_YQb9ToaWHiRoYA55lPvkmIceq3w/exec",
-        TOKEN: "HELIOS-ALPHA", // stały token
-        STORAGE_KEY: "HeliosSuiteSettings"
+  /***********************
+   * CONFIG – Twoje dane *
+   ***********************/
+  const CONFIG = {
+    WEBAPP_URL: "https://script.google.com/macros/s/AKfycbyHm1SuEMUyfeRUiU9ttQLyfaix1QacKaJhU0tGdB_YQb9ToaWHiRoYA55lPvkmIceq3w/exec",
+    TOKEN:      "HeliosPulseToken",
+    ALLIANCE:   "Legioniści Heliosa",
+    PAGES_URL:  "https://kid6767.github.io/HeliosSuite/"
+  };
+
+  /******************************
+   * STORAGE (bezpieczne klucze) *
+   ******************************/
+  const SKEY = {
+    THEME:        "helios.theme",            // classic|remaster|pirate|dark
+    ENABLED:      "helios.modules",          // {aegis:true, gf:true, hp:true, chat:true}
+    UI_FIXES:     "helios.uiFixes",          // bool
+    LAST_PRES:    "helios.lastPresence",     // ts
+    CHAT_PIN:     "helios.chatPinned",       // bool
+    EXP_FEATURES: "helios.expFeatures"       // bool
+  };
+
+  function read(key, defVal){
+    try{ const v=GM_getValue(key); return (v===undefined? defVal : v);}catch(_){ return defVal; }
+  }
+  function write(key, val){
+    try{ GM_setValue(key, val); }catch(_){}
+  }
+
+  /****************
+   * THEME MANAGER
+   ****************/
+  const ThemeManager = (function(){
+    const THEMES = {
+      classic: {
+        label: "Classic",
+        vars: {
+          "--helios-bg": "#f3efe4",
+          "--helios-fg": "#1a1a1a",
+          "--helios-accent": "#b8892a",
+          "--helios-card": "#fff9ec",
+          "--helios-border": "#d7c7a4"
+        }
+      },
+      remaster: {
+        label: "Remaster",
+        vars: {
+          "--helios-bg": "#0e0d0b",
+          "--helios-fg": "#f1d78a",
+          "--helios-accent": "#ffd35a",
+          "--helios-card": "#1d1a15",
+          "--helios-border": "#403729"
+        }
+      },
+      pirate: {
+        label: "Piracki",
+        vars: {
+          "--helios-bg": "#07100c",
+          "--helios-fg": "#c7f3d8",
+          "--helios-accent": "#00c58a",
+          "--helios-card": "#0e1a15",
+          "--helios-border": "#0f3025"
+        }
+      },
+      dark: {
+        label: "Dark",
+        vars: {
+          "--helios-bg": "#101114",
+          "--helios-fg": "#e7e7ea",
+          "--helios-accent": "#60a5fa",
+          "--helios-card": "#171a1f",
+          "--helios-border": "#242833"
+        }
+      }
     };
 
-    /************************************
-     * ZARZĄDZANIE USTAWIENIAMI
-     ************************************/
-    let settings = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || "{}");
-
-    function saveSettings() {
-        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(settings));
+    function applyTheme(name){
+      const t = THEMES[name] ? name : "remaster";
+      write(SKEY.THEME, t);
+      const root = document.documentElement;
+      const vars = THEMES[t].vars;
+      Object.keys(vars).forEach(k=> root.style.setProperty(k, vars[k]));
+      document.body.dataset.heliosTheme = t;
     }
 
-    function getSetting(key, def) {
-        return settings[key] !== undefined ? settings[key] : def;
-    }
+    function current(){ return read(SKEY.THEME, "remaster"); }
+    function list(){ return Object.keys(THEMES).map(k=> ({key:k, label:THEMES[k].label})); }
 
-    function setSetting(key, value) {
-        settings[key] = value;
-        saveSettings();
-    }
+    return { applyTheme, current, list };
+  })();
 
-    /************************************
-     * MOTYWY
-     ************************************/
-    function applyTheme(theme) {
-        document.body.classList.remove("helios-classic", "helios-dark");
-        if (theme === "Classic") document.body.classList.add("helios-classic");
-        if (theme === "Dark") document.body.classList.add("helios-dark");
+  /********************
+   * CSS (global fixes)
+   ********************/
+  GM_addStyle(`
+    :root{
+      --helios-bg:#0e0d0b; --helios-fg:#f1d78a; --helios-accent:#ffd35a;
+      --helios-card:#1d1a15; --helios-border:#403729;
     }
+    body[data-helios-theme]{ background-color:var(--helios-bg) !important; color:var(--helios-fg) !important; }
+    .helios-card{ background:var(--helios-card); border:1px solid var(--helios-border); border-radius:10px; padding:10px; }
+    .helios-btn{ background:var(--helios-accent); color:#000; border:none; border-radius:8px; padding:6px 10px; cursor:pointer; font-weight:bold; }
+    .helios-btn:disabled{ opacity:.6; cursor:not-allowed; }
+    /* Naprawa "zjeżdżających się" okien / nakładek */
+    .gpwindow, .ui-dialog, .ui-dialog.ui-widget{ z-index: 99998 !important; }
+    #ui_notebook, #ui_box, #js_game .ui-dialog{ z-index: 99995 !important; }
+    #ui_box .ui-dialog-titlebar, .ui-notebook, .ui-dialog .ui-dialog-content{ position:relative; }
+    /* Ikona w lewym menu */
+    .helios-left-icon{ position:fixed; left:4px; top:160px; z-index:99999; width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, var(--helios-accent), #fef08a); border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,.4); cursor:pointer; }
+    .helios-left-icon span{ font-size:20px; }
+    .helios-left-icon:hover{ transform: translateY(-1px); }
+    /* Panel boczny Helios */
+    #helios-panel{ position:fixed; right:10px; top:60px; width:360px; max-height:70vh; overflow:auto; z-index:99999; display:none; }
+    #helios-panel.active{ display:block; animation: heliosIn .15s ease-out; }
+    @keyframes heliosIn{ from{ opacity:0; transform:translateY(-4px);} to{opacity:1; transform:none;} }
+    .helios-section + .helios-section{ margin-top:10px; }
+    .helios-row{ display:flex; align-items:center; justify-content:space-between; margin:6px 0; }
+    .helios-kv{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+    .helios-chip{ padding:4px 8px; border-radius:999px; background:rgba(255,255,255,.05); border:1px solid var(--helios-border); }
+    .helios-link{ color:var(--helios-accent); text-decoration:underline; cursor:pointer; }
+    /* Zakładka Ustawień (jak natywna) */
+    .helios-settings-root .tabbar{ display:flex; gap:8px; border-bottom:1px solid var(--helios-border); padding-bottom:6px; margin-bottom:10px; }
+    .helios-settings-root .tabbar button{ background:transparent; color:var(--helios-fg); border:1px solid var(--helios-border);
+      border-bottom:none; border-top-left-radius:8px; border-top-right-radius:8px; padding:6px 10px; cursor:pointer; }
+    .helios-settings-root .tabbar button.active{ background:var(--helios-card); color:var(--helios-accent); }
+    .helios-settings-root .tabview{ display:none; }
+    .helios-settings-root .tabview.active{ display:block; }
+    /* Czat (alpha) */
+    #helios-chat{ margin-top:6px; }
+    #helios-chat textarea{ width:100%; height:80px; background:#00000022; color:var(--helios-fg); border:1px solid var(--helios-border); border-radius:8px; padding:6px; }
+    #helios-chat .chat-log{ height:180px; overflow:auto; background:#00000022; border:1px solid var(--helios-border); border-radius:8px; padding:6px; margin-bottom:6px; }
+    #helios-chat .msg{ margin:3px 0; }
+    #helios-chat .msg .nick{ color:var(--helios-accent); font-weight:bold; margin-right:6px; }
+  `);
 
-    const style = document.createElement("style");
-    style.textContent = `
-      body.helios-dark {
-        background: #0b0c10 !important;
-        color: #eee !important;
-      }
-      body.helios-dark .ui_various {
-        background: #1f2833 !important;
-        color: #eee !important;
-      }
-      body.helios-classic {
-        background: #f4f4f4 !important;
-      }
+  // zastosuj temat od razu
+  ThemeManager.applyTheme( ThemeManager.current() );
+
+  /***********************
+   * HELIOS UTILS (nick) *
+   ***********************/
+  function getNick(){
+    // heurystyka – Grepolis ma w headerze nick zalogowanego gracza:
+    const el = document.querySelector('#ui_box .player_name, #ui_box .gpwindow_content .ui_various .player_name, .game_header .player_name');
+    if (el && el.textContent.trim()) return el.textContent.trim();
+    // awaryjnie z localStorage (jeśli ktoś już zapisał)
+    const stored = read("helios.nick", "");
+    if (stored) return stored;
+    // fallback: prompt 1x i zapamiętać
+    const ask = window.localStorage.getItem("helios.nick") || prompt("Podaj swój nick (1x):","") || "Unknown";
+    window.localStorage.setItem("helios.nick", ask);
+    write("helios.nick", ask);
+    return ask;
+  }
+
+  /***********************
+   * HELIOSPULSE (presence)
+   ***********************/
+  async function sendPresenceIfNeeded(){
+    const last = parseInt(read(SKEY.LAST_PRES, 0), 10) || 0;
+    const now = Date.now();
+    // wysyłaj max raz na 15 min
+    if (now - last < 15*60*1000) return;
+    try{
+      const url = CONFIG.WEBAPP_URL + "?action=presence&token="+encodeURIComponent(CONFIG.TOKEN)+"&nick="+encodeURIComponent(getNick());
+      // Bez CORS – grepolis domena inna, więc XHR:
+      GM_xmlhttpRequest({ method:"GET", url, onload:()=>write(SKEY.LAST_PRES, now), onerror:()=>{} });
+    }catch(_){}
+  }
+
+  /*********************
+   * UI FIXES – włączenie
+   *********************/
+  function applyUiFixes(){
+    // same CSS już wgrane; tu można dodać dynamiczne poprawki jeśli trzeba
+    // np. dopasowanie parent dla dialogów:
+    try{
+      document.querySelectorAll(".ui-dialog").forEach(d=>{
+        d.style.position = "fixed";
+      });
+    }catch(_){}
+  }
+
+  /********************
+   * LEWE MENU – ikona
+   ********************/
+  function injectLeftIcon(){
+    if (document.getElementById("helios-left-icon")) return;
+    const b = document.createElement("div");
+    b.id = "helios-left-icon";
+    b.className = "helios-left-icon";
+    b.title = "HeliosSuite – panel";
+    b.innerHTML = `<span>☀️</span>`;
+    b.addEventListener("click", ()=> togglePanel());
+    document.body.appendChild(b);
+  }
+
+  /*****************
+   * PANEL PRAWY UI
+   *****************/
+  function ensurePanel(){
+    if (document.getElementById("helios-panel")) return;
+    const wrap = document.createElement("div");
+    wrap.id = "helios-panel";
+    wrap.className = "helios-card";
+
+    wrap.innerHTML = `
+      <div class="helios-section">
+        <div class="helios-row">
+          <div class="helios-kv">
+            <span class="helios-chip">HeliosSuite</span>
+            <span class="helios-chip"><b>${CONFIG.ALLIANCE}</b></span>
+          </div>
+          <button id="helios-close" class="helios-btn">✖</button>
+        </div>
+        <div class="helios-row"><a class="helios-link" target="_blank" href="${CONFIG.PAGES_URL}">🌐 Strona / instalacja</a></div>
+      </div>
+
+      <div class="helios-section">
+        <div class="helios-row">
+          <b>Motyw</b>
+          <select id="helios-theme"></select>
+        </div>
+        <div class="helios-row"><small>Kolory odświeżają się natychmiast dla całego UI.</small></div>
+      </div>
+
+      <div class="helios-section">
+        <div class="helios-row"><b>Moduły</b></div>
+        <label><input type="checkbox" id="mod-aegis"> Aegis (motywy & UI)</label><br>
+        <label><input type="checkbox" id="mod-gf"> GrepoFusion (pakiet helperów)</label><br>
+        <label><input type="checkbox" id="mod-hp"> HeliosPulse (presence & raporty)</label><br>
+        <label><input type="checkbox" id="mod-chat"> Czat (alpha, lokalny)</label><br>
+        <label><input type="checkbox" id="mod-uifix"> Naprawy okien / z-index</label>
+      </div>
+
+      <div class="helios-section">
+        <div class="helios-row"><b>Operacje</b></div>
+        <button class="helios-btn" id="helios-pres">Ping obecności</button>
+        <button class="helios-btn" id="helios-report">BBCode – raport dzienny</button>
+      </div>
+
+      <div class="helios-section" id="helios-chat" style="display:none;">
+        <div class="helios-row"><b>Czat (alpha)</b><span><label><input type="checkbox" id="chat-pin"> Przypnij</label></span></div>
+        <div class="chat-log" id="chat-log"></div>
+        <textarea id="chat-msg" placeholder="Napisz wiadomość (lokalny – widzą tylko ci z tym samym skryptem w danej przeglądarce)"></textarea>
+        <div class="helios-row">
+          <button class="helios-btn" id="chat-send">Wyślij</button>
+          <small>Docelowo: kanały Sojusz/Pakt/Global – via HeliosPulse backend</small>
+        </div>
+      </div>
     `;
-    document.head.appendChild(style);
 
-    /************************************
-     * ZAKŁADKA W USTAWIENIACH
-     ************************************/
-    function injectSettingsTab() {
-        if (!window.Game || !window.GPWindowMgr) return;
+    document.body.appendChild(wrap);
 
-        const SettingsWindowFactory = window.SettingsWindowFactory;
-        if (!SettingsWindowFactory) return;
+    // Fill themes
+    const sel = wrap.querySelector("#helios-theme");
+    ThemeManager.list().forEach(t=>{
+      const o=document.createElement("option");
+      o.value=t.key; o.textContent=t.label;
+      if (t.key===ThemeManager.current()) o.selected=true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener("change", e=> ThemeManager.applyTheme(e.target.value) );
 
-        const origInit = SettingsWindowFactory.open;
-        SettingsWindowFactory.open = function (tab, subtab) {
-            const wnd = origInit.apply(this, arguments);
+    // Modules
+    const enabled = read(SKEY.ENABLED, {aegis:true, gf:true, hp:true, chat:false});
+    wrap.querySelector("#mod-aegis").checked = !!enabled.aegis;
+    wrap.querySelector("#mod-gf").checked   = !!enabled.gf;
+    wrap.querySelector("#mod-hp").checked   = !!enabled.hp;
+    wrap.querySelector("#mod-chat").checked = !!enabled.chat;
 
-            if (wnd && !wnd.__helios_injected) {
-                wnd.__helios_injected = true;
-                const container = wnd.getHandler().getElement().find(".settings-container");
+    const uiFix = read(SKEY.UI_FIXES, true);
+    wrap.querySelector("#mod-uifix").checked = !!uiFix;
 
-                const heliosTab = $(`
-                  <div class="helios-tab">
-                    <h2>⚡ HeliosSuite</h2>
-                    <p>Wybierz motyw oraz dodatki do aktywacji:</p>
+    wrap.querySelector("#mod-aegis").addEventListener("change", ev=> { enabled.aegis = ev.target.checked; write(SKEY.ENABLED, enabled); });
+    wrap.querySelector("#mod-gf").addEventListener("change", ev=> { enabled.gf = ev.target.checked; write(SKEY.ENABLED, enabled); });
+    wrap.querySelector("#mod-hp").addEventListener("change", ev=> { enabled.hp = ev.target.checked; write(SKEY.ENABLED, enabled); });
+    wrap.querySelector("#mod-chat").addEventListener("change", ev=> {
+      enabled.chat = ev.target.checked; write(SKEY.ENABLED, enabled);
+      document.getElementById("helios-chat").style.display = enabled.chat ? "block":"none";
+    });
 
-                    <label>
-                      <strong>Motyw:</strong>
-                      <select id="helios-theme">
-                        <option value="Classic">Classic</option>
-                        <option value="Dark">Dark</option>
-                      </select>
-                    </label>
+    wrap.querySelector("#mod-uifix").addEventListener("change", ev=>{
+      write(SKEY.UI_FIXES, !!ev.target.checked);
+      if (ev.target.checked) applyUiFixes();
+    });
 
-                    <hr>
+    wrap.querySelector("#helios-close").addEventListener("click", ()=> togglePanel(false));
 
-                    <h3>Aegis</h3>
-                    <label><input type="checkbox" id="helios-aegis-queue"> Kolejka w Senacie</label><br>
-                    <label><input type="checkbox" id="helios-aegis-ui"> Złoto-czarny UI</label>
+    // Ops
+    wrap.querySelector("#helios-pres").addEventListener("click", ()=> sendPresence(true) );
+    wrap.querySelector("#helios-report").addEventListener("click", ()=> buildDailyBBCode() );
 
-                    <h3>GrepoFusion</h3>
-                    <label><input type="checkbox" id="helios-gf-transport"> Transportrechner</label><br>
-                    <label><input type="checkbox" id="helios-gf-time"> Zeitrechner</label><br>
-                    <label><input type="checkbox" id="helios-gf-emotes"> Emotki w wiadomościach</label>
+    // Chat (local alpha)
+    const chatPin = read(SKEY.CHAT_PIN, false);
+    wrap.querySelector("#chat-pin").checked = chatPin;
+    wrap.querySelector("#chat-pin").addEventListener("change", ev=> write(SKEY.CHAT_PIN, !!ev.target.checked));
+    wrap.querySelector("#chat-send").addEventListener("click", ()=> chatSend() );
 
-                    <h3>HeliosPulse</h3>
-                    <label><input type="checkbox" id="helios-pulse-reports"> Raporty w UI</label><br>
-                    <label><input type="checkbox" id="helios-pulse-presence"> Monitor obecności</label>
-                  </div>
-                `);
+    // Show chat if enabled
+    document.getElementById("helios-chat").style.display = enabled.chat ? "block":"none";
+  }
 
-                container.append(heliosTab);
+  function togglePanel(force){
+    const p = document.getElementById("helios-panel");
+    if (!p) return;
+    const want = (typeof force==="boolean") ? force : !p.classList.contains("active");
+    p.classList.toggle("active", want);
+  }
 
-                // ustaw wartości z localStorage
-                $("#helios-theme").val(getSetting("theme", "Classic"));
-                applyTheme(getSetting("theme", "Classic"));
+  /***************
+   * CHAT (local)
+   ***************/
+  function chatLogArr(){
+    try{
+      return JSON.parse(window.localStorage.getItem("helios.chatlog")||"[]");
+    }catch(_){ return []; }
+  }
+  function chatSaveArr(arr){
+    try{
+      window.localStorage.setItem("helios.chatlog", JSON.stringify(arr.slice(-100)));
+      renderChat();
+    }catch(_){}
+  }
+  function chatSend(){
+    const ta = document.getElementById("chat-msg");
+    if (!ta || !ta.value.trim()) return;
+    const arr = chatLogArr();
+    arr.push({ts:Date.now(), nick:getNick(), txt:ta.value.trim()});
+    ta.value="";
+    chatSaveArr(arr);
+  }
+  function renderChat(){
+    const log = document.getElementById("chat-log");
+    if (!log) return;
+    const arr = chatLogArr();
+    log.innerHTML = arr.map(m=> `<div class="msg"><span class="nick">${escapeHtml(m.nick)}</span> <span class="txt">${escapeHtml(m.txt)}</span></div>`).join("");
+    log.scrollTop = log.scrollHeight;
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
-                $("#helios-aegis-queue").prop("checked", getSetting("aegisQueue", false));
-                $("#helios-aegis-ui").prop("checked", getSetting("aegisUI", false));
+  /*************************
+   * HeliosPulse – operacje
+   *************************/
+  function sendPresence(manual){
+    const url = CONFIG.WEBAPP_URL + "?action=presence&token="+encodeURIComponent(CONFIG.TOKEN)+"&nick="+encodeURIComponent(getNick());
+    GM_xmlhttpRequest({
+      method:"GET", url,
+      onload:(r)=> {
+        toast("✅ Presence OK");
+        write(SKEY.LAST_PRES, Date.now());
+        if (manual) console.log("[HeliosPulse] presence response:", r.responseText);
+      },
+      onerror: ()=> toast("⚠️ Presence ERROR")
+    });
+  }
 
-                $("#helios-gf-transport").prop("checked", getSetting("gfTransport", false));
-                $("#helios-gf-time").prop("checked", getSetting("gfTime", false));
-                $("#helios-gf-emotes").prop("checked", getSetting("gfEmotes", false));
+  function buildDailyBBCode(){
+    const url = CONFIG.WEBAPP_URL + "?action=daily_report_bbcode&token="+encodeURIComponent(CONFIG.TOKEN)+"&date=";
+    const dateStr = new Date().toISOString().slice(0,10);
+    GM_xmlhttpRequest({
+      method:"GET", url: url+dateStr,
+      onload:(r)=> {
+        const txt = r.responseText || "";
+        copyToClipboard(txt);
+        toast("📋 BBCode skopiowany (dzisiejszy raport)");
+      },
+      onerror: ()=> toast("⚠️ Raport: błąd")
+    });
+  }
 
-                $("#helios-pulse-reports").prop("checked", getSetting("pulseReports", false));
-                $("#helios-pulse-presence").prop("checked", getSetting("pulsePresence", false));
+  function copyToClipboard(t){
+    const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy"); ta.remove();
+  }
 
-                // reakcje na zmiany
-                $("#helios-theme").on("change", function () {
-                    setSetting("theme", this.value);
-                    applyTheme(this.value);
-                });
+  /***************
+   * TOAST helper
+   ***************/
+  function toast(msg){
+    const id="helios-toast";
+    let t = document.getElementById(id);
+    if (!t) {
+      t=document.createElement("div");
+      t.id=id;
+      t.style.cssText="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999999;background:var(--helios-card);border:1px solid var(--helios-border);padding:8px 12px;border-radius:10px;color:var(--helios-fg);box-shadow:0 10px 30px rgba(0,0,0,.4);";
+      document.body.appendChild(t);
+    }
+    t.textContent=msg;
+    t.style.display="block";
+    setTimeout(()=>{ if (t) t.style.display="none"; }, 1800);
+  }
 
-                $("#helios-aegis-queue").on("change", function () { setSetting("aegisQueue", this.checked); });
-                $("#helios-aegis-ui").on("change", function () { setSetting("aegisUI", this.checked); });
+  /*****************
+   * SETTINGS TAB  *
+   *****************/
+  function injectSettingsTab(){
+    // pełna „natykówka” na UI Grepolis potrafi się różnić per świat; zrobimy tryb hybrydowy:
+    // 1) rejestrujemy menu w Tampermonkey
+    GM_registerMenuCommand("HeliosSuite – Ustawienia (panel)", ()=>{ ensurePanel(); togglePanel(true); });
+    // 2) dociągamy się pod przycisk w ustawieniach gry (o ile istnieje)
+    const tryHook = ()=>{
+      const settingsBtn = document.querySelector('#settings_button, .btn_settings');
+      if (settingsBtn && !settingsBtn.dataset.heliosBound){
+        settingsBtn.dataset.heliosBound="1";
+        settingsBtn.addEventListener("click", ()=> setTimeout(()=> hookNatively(), 600));
+      }
+    };
+    const hookNatively = ()=>{
+      // znajdź okno ustawień i wstaw „HeliosSuite” jako nową zakładkę
+      const container = document.querySelector('.ui-dialog .settings-container, .settings_window, .settings_dialog, .ui-dialog-content .settings');
+      if (!container) return;
+      if (container.querySelector('.helios-settings-root')) return;
 
-                $("#helios-gf-transport").on("change", function () { setSetting("gfTransport", this.checked); });
-                $("#helios-gf-time").on("change", function () { setSetting("gfTime", this.checked); });
-                $("#helios-gf-emotes").on("change", function () { setSetting("gfEmotes", this.checked); });
+      // stworzymy blok zakładek wewnątrz istniejącego contentu
+      const root = document.createElement("div");
+      root.className = "helios-settings-root helios-card";
+      root.innerHTML = `
+        <div class="tabbar">
+          <button data-tab="themes" class="active">🎨 Motywy</button>
+          <button data-tab="modules">🧩 Moduły</button>
+          <button data-tab="pulse">☀️ HeliosPulse</button>
+          <button data-tab="chat">💬 Czat</button>
+        </div>
+        <div class="tabview active" data-view="themes">
+          <div class="helios-row"><b>Wybór motywu</b></div>
+          <div class="helios-row"><select id="helios-theme2"></select><button class="helios-btn" id="helios-apply2">Zastosuj</button></div>
+          <small>Classic / Remaster / Piracki / Dark. Zapis w localStorage (per przeglądarka).</small>
+        </div>
+        <div class="tabview" data-view="modules">
+          <label><input type="checkbox" id="mod-aegis2"> Aegis – motywy & UI</label><br>
+          <label><input type="checkbox" id="mod-gf2"> GrepoFusion – pakiet helperów</label><br>
+          <label><input type="checkbox" id="mod-hp2"> HeliosPulse – presence+raporty</label><br>
+          <label><input type="checkbox" id="mod-chat2"> Czat – lokalny (alpha)</label><br>
+          <label><input type="checkbox" id="mod-uifix2"> Naprawy okien/z-index</label>
+        </div>
+        <div class="tabview" data-view="pulse">
+          <div class="helios-row"><b>Operacje</b></div>
+          <button class="helios-btn" id="helios-pres2">Ping obecności</button>
+          <button class="helios-btn" id="helios-report2">BBCode – dzienny raport</button>
+          <div style="margin-top:8px;"><small>WEBAPP: ${CONFIG.WEBAPP_URL}<br/>TOKEN: ${CONFIG.TOKEN}</small></div>
+        </div>
+        <div class="tabview" data-view="chat">
+          <div class="helios-row"><b>Czat (alpha)</b></div>
+          <div class="chat-log" id="chat-log2"></div>
+          <textarea id="chat-msg2" placeholder="Napisz wiadomość (lokalny)."></textarea>
+          <div class="helios-row"><button class="helios-btn" id="chat-send2">Wyślij</button></div>
+        </div>
+      `;
+      container.prepend(root);
 
-                $("#helios-pulse-reports").on("change", function () { setSetting("pulseReports", this.checked); });
-                $("#helios-pulse-presence").on("change", function () { setSetting("pulsePresence", this.checked); });
-            }
-            return wnd;
-        };
+      // obsługa tabów
+      root.querySelectorAll('.tabbar button').forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          root.querySelectorAll('.tabbar button').forEach(b=> b.classList.remove('active'));
+          btn.classList.add('active');
+          const wanted = btn.dataset.tab;
+          root.querySelectorAll('.tabview').forEach(v=> v.classList.toggle('active', v.dataset.view===wanted));
+          // przy wejściu w czat – odśwież log
+          if (wanted==='chat') renderChat2();
+        });
+      });
+
+      // tematy
+      const sel = root.querySelector("#helios-theme2");
+      ThemeManager.list().forEach(t=>{
+        const o=document.createElement("option");
+        o.value=t.key; o.textContent=t.label;
+        if (t.key===ThemeManager.current()) o.selected=true;
+        sel.appendChild(o);
+      });
+      root.querySelector("#helios-apply2").addEventListener("click", ()=> ThemeManager.applyTheme(sel.value) );
+
+      // moduły
+      const enabled = read(SKEY.ENABLED, {aegis:true, gf:true, hp:true, chat:false});
+      root.querySelector("#mod-aegis2").checked = !!enabled.aegis;
+      root.querySelector("#mod-gf2").checked   = !!enabled.gf;
+      root.querySelector("#mod-hp2").checked   = !!enabled.hp;
+      root.querySelector("#mod-chat2").checked = !!enabled.chat;
+
+      const uiFix = read(SKEY.UI_FIXES, true);
+      root.querySelector("#mod-uifix2").checked = !!uiFix;
+
+      root.querySelector("#mod-aegis2").addEventListener("change", ev=> { enabled.aegis = ev.target.checked; write(SKEY.ENABLED, enabled); });
+      root.querySelector("#mod-gf2").addEventListener("change", ev=> { enabled.gf = ev.target.checked; write(SKEY.ENABLED, enabled); });
+      root.querySelector("#mod-hp2").addEventListener("change", ev=> { enabled.hp = ev.target.checked; write(SKEY.ENABLED, enabled); });
+      root.querySelector("#mod-chat2").addEventListener("change", ev=> { enabled.chat = ev.target.checked; write(SKEY.ENABLED, enabled); });
+
+      root.querySelector("#mod-uifix2").addEventListener("change", ev=> {
+        write(SKEY.UI_FIXES, !!ev.target.checked);
+        if (ev.target.checked) applyUiFixes();
+      });
+
+      // pulse
+      root.querySelector("#helios-pres2").addEventListener("click", ()=> sendPresence(true) );
+      root.querySelector("#helios-report2").addEventListener("click", ()=> buildDailyBBCode() );
+
+      // chat
+      root.querySelector("#chat-send2").addEventListener("click", ()=> chatSend2() );
+    };
+
+    // próby hookowania (UI bywa SPA)
+    setInterval(tryHook, 1500);
+  }
+
+  // Chat klon w zakładce ustawień
+  function renderChat2(){
+    const log = document.getElementById("chat-log2");
+    if (!log) return;
+    const arr = chatLogArr();
+    log.innerHTML = arr.map(m=> `<div class="msg"><span class="nick">${escapeHtml(m.nick)}</span> <span class="txt">${escapeHtml(m.txt)}</span></div>`).join("");
+    log.scrollTop = log.scrollHeight;
+  }
+  function chatSend2(){
+    const ta = document.getElementById("chat-msg2");
+    if (!ta || !ta.value.trim()) return;
+    const arr = chatLogArr();
+    arr.push({ts:Date.now(), nick:getNick(), txt:ta.value.trim()});
+    ta.value="";
+    chatSaveArr(arr);
+    renderChat2();
+  }
+
+  /********
+   * INIT *
+   ********/
+  function init(){
+    // panel + ikona
+    ensurePanel();
+    injectLeftIcon();
+
+    // presence co jakiś czas
+    const enabled = read(SKEY.ENABLED, {aegis:true, gf:true, hp:true, chat:false});
+    if (enabled.hp) {
+      sendPresenceIfNeeded();
+      setInterval(sendPresenceIfNeeded, 5*60*1000);
     }
 
-    /************************************
-     * START
-     ************************************/
-    function init() {
-        console.log("[HeliosSuite] Init");
-        applyTheme(getSetting("theme", "Classic"));
-        injectSettingsTab();
-    }
+    // naprawy UI
+    if (read(SKEY.UI_FIXES, true)) applyUiFixes();
 
-    window.addEventListener("load", init);
+    // czat – nasłuchiwanie zmian z localStorage (inne karty)
+    window.addEventListener("storage", (e)=>{
+      if (e.key==="helios.chatlog"){ renderChat(); renderChat2(); }
+    });
+
+    // settings tab
+    injectSettingsTab();
+
+    // 1st render chat
+    renderChat();
+  }
+
+  // start po załadowaniu
+  const start = ()=>{
+    if (document.readyState === "complete" || document.readyState === "interactive") init();
+    else document.addEventListener("DOMContentLoaded", init);
+  };
+  start();
+
 })();
