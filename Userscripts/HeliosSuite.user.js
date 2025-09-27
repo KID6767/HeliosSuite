@@ -33,7 +33,7 @@
    * CONFIG – Twoje dane *
    ***********************/
   const CONFIG = {
-    WEBAPP_URL: "https://script.google.com/macros/s/AKfycbyHm1SuEMUyfeRUiU9ttQLyfaix1QacKaJhU0tGdB_YQb9ToaWHiRoYA55lPvkmIceq3w/exec",
+    WEBAPP_URL: "https://script.google.com/macros/s/AKfycbz_uCloWbGeurR9K29hhuvYglv9A9f-je7vcrA1LmV4ZfcUBfaxC9gujIZe15AhgFNYQg/exec",
     TOKEN:      "HeliosPulseToken",
     ALLIANCE:   "Legioniści Heliosa",
     PAGES_URL:  "https://kid6767.github.io/HeliosSuite/"
